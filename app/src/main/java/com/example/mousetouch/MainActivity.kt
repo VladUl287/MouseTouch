@@ -15,7 +15,10 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
@@ -66,6 +69,48 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+    var isLeftButtonHeld = false
+    var isDoubleTapDetected = false
+
+    private val doubleTapDelay = 300L // Adjust as needed to match your double-tap window
+    private val handler = Handler(Looper.getMainLooper())
+    private val gestureListener = object : GestureDetector.SimpleOnGestureListener() {
+        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+        @RequiresApi(Build.VERSION_CODES.P)
+        override fun onSingleTapUp(e: MotionEvent): Boolean {
+            if (!isLeftButtonHeld) {
+                handler.postDelayed({
+                    if (!isDoubleTapDetected) {
+                        sendMouseClick(LEFT_CLICK)
+                    }
+                }, doubleTapDelay)
+            }
+            return true
+        }
+
+        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+        @RequiresApi(Build.VERSION_CODES.P)
+        override fun onDoubleTap(e: MotionEvent): Boolean {
+            if (!isLeftButtonHeld) {
+                sendMouseClick(RIGHT_CLICK)
+            }
+            isDoubleTapDetected = true
+            return true
+        }
+
+        @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+        @RequiresApi(Build.VERSION_CODES.P)
+        override fun onLongPress(e: MotionEvent) {
+            sendMouseReport(LEFT_CLICK, 0, 0, 0) // button down only
+            isLeftButtonHeld = true
+        }
+
+        // Reset double-tap detection after a complete single tap is confirmed
+        override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+            isDoubleTapDetected = false
+            return super.onSingleTapConfirmed(e)
+        }
+    }
 
     @RequiresApi(Build.VERSION_CODES.P)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -121,52 +166,103 @@ class MainActivity : ComponentActivity() {
         var lastTapX = 0f
         var lastTapY = 0f
 
+        var initialX = 0f
+        var initialY = 0f
+        var isScrolling = false
+        var scrollThreshold = 20f
+
+        var gestureDetector = GestureDetector(this, gestureListener)
+
         layout.setOnTouchListener { _, event ->
-            when (event.action) {
-                // Finger down (touch started)
-                MotionEvent.ACTION_DOWN -> {
+            gestureDetector.onTouchEvent(event)
+
+            // Handle movement manually
+            if (event.action == MotionEvent.ACTION_MOVE && !isLeftButtonHeld) {
+                if(event.pointerCount == 2) {
+                        val deltaY = event.y - initialY
+                        if (deltaY > scrollThreshold) {
+                            sendMouseScroll(-1) // Scroll down
+                            initialY = event.y
+                        } else if (deltaY < -scrollThreshold) {
+                            sendMouseScroll(1) // Scroll up
+                            initialY = event.y
+                        }
+                } else {
+                    val dx = ((event.x - lastX) * speedMultiplier).toInt().coerceIn(-127, 127)
+                    val dy = ((event.y - lastY) * speedMultiplier).toInt().coerceIn(-127, 127)
+                    sendMouseReport(0, dx, dy, 0)
                     lastX = event.x
                     lastY = event.y
                 }
-
-                // Finger moved (gesture)
-                MotionEvent.ACTION_MOVE -> {
-                    val now = System.currentTimeMillis()
-                    if (now - lastReportTime > reportInterval) {
-                        val dx = ((event.x - lastX) * speedMultiplier).toInt().coerceIn(-127, 127)
-                        val dy = ((event.y - lastY) * speedMultiplier).toInt().coerceIn(-127, 127)
-
-                        // Send mouse movement if there is any movement
-                        if (dx != 0 || dy != 0) {
-                            sendMouseMovement(dx, dy)
-                            lastX = event.x
-                            lastY = event.y
-                            lastReportTime = now
-                        }
-                    }
-                }
-
-                // Finger lifted (tap or click)
-                MotionEvent.ACTION_UP -> {
-                    val now = System.currentTimeMillis()
-
-                    // Detect if it's a double-tap or single tap
-                    if (now - lastTapTime < doubleTapInterval) {
-                        // Double tap detected: Right click
-                        sendMouseClick(RIGHT_CLICK) // Right-click on double tap
-                    } else {
-                        // Single tap detected: Left click
-                        sendMouseClick(LEFT_CLICK) // Left-click on single tap
-                    }
-
-                    // Update last tap time and position for double tap detection
-                    lastTapTime = now
-                    lastTapX = event.x
-                    lastTapY = event.y
-                }
             }
+
+            if (event.action == MotionEvent.ACTION_UP && isLeftButtonHeld) {
+                // Release left button on finger lift
+                sendMouseReport(0, 0, 0, 0)
+                isLeftButtonHeld = false
+            }
+
             true
         }
+
+//        layout.setOnTouchListener { _, event ->
+//            when (event.action) {
+//                // Finger down (touch started)
+//                MotionEvent.ACTION_DOWN -> {
+//                    lastX = event.x
+//                    lastY = event.y
+//                    sendMouseClick(LEFT_CLICK)
+//                }
+//
+//                // Finger moved (gesture)
+//                MotionEvent.ACTION_MOVE -> {
+//                    val now = System.currentTimeMillis()
+//                    if(event.pointerCount == 2) {
+//                        val deltaY = event.y - initialY
+//                        if (deltaY > scrollThreshold) {
+//                            sendMouseScroll(-1) // Scroll down
+//                            initialY = event.y
+//                        } else if (deltaY < -scrollThreshold) {
+//                            sendMouseScroll(1) // Scroll up
+//                            initialY = event.y
+//                        }
+//                    } else {
+//                        if (now - lastReportTime > reportInterval) {
+//                            val dx = ((event.x - lastX) * speedMultiplier).toInt().coerceIn(-127, 127)
+//                            val dy = ((event.y - lastY) * speedMultiplier).toInt().coerceIn(-127, 127)
+//
+//                            // Send mouse movement if there is any movement
+//                            if (dx != 0 || dy != 0) {
+//                                sendMouseMovement(dx, dy)
+//                                lastX = event.x
+//                                lastY = event.y
+//                                lastReportTime = now
+//                            }
+//                        }
+//                    }
+//                }
+//
+//                // Finger lifted (tap or click)
+//                MotionEvent.ACTION_UP -> {
+//                    val now = System.currentTimeMillis()
+//
+//                    // Detect if it's a double-tap or single tap
+//                    if (now - lastTapTime < doubleTapInterval) {
+//                        // Double tap detected: Right click
+////                        sendMouseClick(RIGHT_CLICK) // Right-click on double tap
+//                    } else {
+//                        // Single tap detected: Left click
+////                        sendMouseClick(LEFT_CLICK) // Left-click on single tap
+//                    }
+//
+//                    // Update last tap time and position for double tap detection
+//                    lastTapTime = now
+//                    lastTapX = event.x
+//                    lastTapY = event.y
+//                }
+//            }
+//            true
+//        }
 
 //        layout.setOnTouchListener { _, event ->
 //            when (event.action) {
@@ -194,6 +290,26 @@ class MainActivity : ComponentActivity() {
         setupHidDevice()
     }
 
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    @RequiresApi(Build.VERSION_CODES.P)
+    private fun sendMouseClick(button: Int) {
+        sendMouseReport(button, 0, 0, 0)
+        Thread.sleep(100)
+        sendMouseReport(0, 0, 0, 0)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.P)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    private fun sendMouseReport(buttons: Int, dx: Int, dy: Int, wheel: Int) {
+        val report = byteArrayOf(
+            buttons.toByte(),
+            dx.toByte(),
+            dy.toByte(),
+            wheel.toByte()
+        )
+        bluetoothHidDevice?.sendReport(connectedDevice, MOUSE_REPORT_ID, report)
+    }
+
     // Left-click button status
     val LEFT_CLICK = 1
     val RIGHT_CLICK = 2
@@ -205,22 +321,16 @@ class MainActivity : ComponentActivity() {
         sendMouseEvent(dx, dy, 0)  // No button pressed, just move
     }
 
-    // Helper function to simulate mouse click
-    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     @RequiresApi(Build.VERSION_CODES.P)
-    private fun sendMouseClick(button: Int) {
-        when (button) {
-            LEFT_CLICK -> {
-                sendMouseEvent(0, 0, 0x01)  // Left-click down
-                Thread.sleep(100) // Short delay for click duration
-                sendMouseEvent(0, 0, 0)  // Left-click up
-            }
-            RIGHT_CLICK -> {
-//                sendMouseEvent(0, 0, 0x02)  // Right-click down
-                Thread.sleep(100) // Short delay for click duration
-                sendMouseEvent(0, 0, 0)  // Right-click up
-            }
-        }
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    private fun sendMouseScroll(wheel: Int) {
+        val report = byteArrayOf(
+            0x00, // buttons
+            0x00, // dx
+            0x00, // dy
+            wheel.toByte() // wheel scroll
+        )
+        bluetoothHidDevice?.sendReport(connectedDevice, MOUSE_REPORT_ID, report)
     }
 
     private fun setupHidDevice() {
@@ -250,30 +360,31 @@ class MainActivity : ComponentActivity() {
         return byteArrayOf(
             0x05, 0x01,        // Usage Page (Generic Desktop)
             0x09, 0x02,        // Usage (Mouse)
-            0xA1.toByte(), 0x01, // Collection (Application)
+            0xA1.toByte(), 0x01,  // Collection (Application)
             0x09, 0x01,        //   Usage (Pointer)
-            0xA1.toByte(), 0x00, //   Collection (Physical)
+            0xA1.toByte(), 0x00,  //   Collection (Physical)
             0x05, 0x09,        //     Usage Page (Button)
             0x19, 0x01,        //     Usage Minimum (1)
             0x29, 0x03,        //     Usage Maximum (3)
             0x15, 0x00,        //     Logical Minimum (0)
             0x25, 0x01,        //     Logical Maximum (1)
-            0x95.toByte(), 0x03, //     Report Count (3)
+            0x95.toByte(), 0x03,  //     Report Count (3 buttons)
             0x75, 0x01,        //     Report Size (1)
-            0x81.toByte(), 0x02, //     Input (Data, Variable, Absolute)
-            0x95.toByte(), 0x01, //     Report Count (1)
+            0x81.toByte(), 0x02,  //     Input (Data,Var,Abs)
+            0x95.toByte(), 0x01,  //     Report Count (1 padding)
             0x75, 0x05,        //     Report Size (5)
-            0x81.toByte(), 0x03, //     Input (Constant, Variable, Absolute) <-- fixed
+            0x81.toByte(), 0x01,  //     Input (Const,Array,Abs)
             0x05, 0x01,        //     Usage Page (Generic Desktop)
             0x09, 0x30,        //     Usage (X)
             0x09, 0x31,        //     Usage (Y)
-            0x15, 0x81.toByte(), //     Logical Minimum (-127)
+            0x09, 0x38,        //     Usage (Wheel)
+            0x15, 0x81.toByte(),  //     Logical Minimum (-127)
             0x25, 0x7F,        //     Logical Maximum (127)
             0x75, 0x08,        //     Report Size (8)
-            0x95.toByte(), 0x02, //     Report Count (2)
-            0x81.toByte(), 0x06, //     Input (Data, Variable, Relative)
-            0xC0.toByte(),     //   End Collection
-            0xC0.toByte()      // End Collection
+            0x95.toByte(), 0x03,  //     Report Count (3: X, Y, Wheel)
+            0x81.toByte(), 0x06,  //     Input (Data,Var,Rel)
+            0xC0.toByte(),        //   End Collection
+            0xC0.toByte()         // End Collection
         )
     }
 
