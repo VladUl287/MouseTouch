@@ -24,6 +24,9 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
 import java.util.concurrent.Executors
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
 
 class MainActivity : ComponentActivity() {
     private lateinit var bluetoothManager: BluetoothManager
@@ -137,8 +140,31 @@ class MainActivity : ComponentActivity() {
                             initialY = event.y
                         }
                     } else {
-                        val dx = ((event.x - lastX) * speedMultiplier).toInt().coerceIn(-127, 127)
-                        val dy = ((event.y - lastY) * speedMultiplier).toInt().coerceIn(-127, 127)
+                        fun roundTowardsLarger(value: Float, movementThreshold: Float): Int {
+                            // Dynamically adjust rounding sensitivity based on the movement size (velocity)
+                            return if (value > 0) {
+                                // For positive values, round up if the fractional part is >= movementThreshold
+                                if (value - floor(value) >= movementThreshold) ceil(value).toInt() else floor(value).toInt()
+                            } else {
+                                // For negative values, round down if the fractional part is <= -movementThreshold
+                                if (abs(value - floor(value)) >= movementThreshold) floor(value).toInt() else ceil(value).toInt()
+                            }
+                        }
+                        val dxRaw = (event.x - lastX) * speedMultiplier
+                        val dyRaw = (event.y - lastY) * speedMultiplier
+
+                        // Adjust the movement threshold based on how much the mouse is moving
+                        val movementThreshold = if (abs(dxRaw) > 1 || abs(dyRaw) > 1) 1f else 0.4f  // Adjusted for faster movements
+
+//                        val dx = ((event.x - lastX) * speedMultiplier).toInt().coerceIn(-127, 127)
+//                        val dy = ((event.y - lastY) * speedMultiplier).toInt().coerceIn(-127, 127)
+//                        val dx = roundTowardsLarger(((event.x - lastX) * speedMultiplier)).coerceIn(-127, 127)
+//                        val dy = roundTowardsLarger(((event.y - lastY) * speedMultiplier)).coerceIn(-127, 127)
+
+                        // Apply custom rounding with dynamic threshold
+                        val dx = roundTowardsLarger(dxRaw, movementThreshold).coerceIn(-127, 127)
+                        val dy = roundTowardsLarger(dyRaw, movementThreshold).coerceIn(-127, 127)
+
                         sendMouseReport(0, dx, dy, 0)
                         lastX = event.x
                         lastY = event.y
