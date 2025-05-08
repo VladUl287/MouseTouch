@@ -154,7 +154,7 @@ class MainActivity : ComponentActivity() {
                         val dyRaw = (event.y - lastY) * speedMultiplier
 
                         // Adjust the movement threshold based on how much the mouse is moving
-                        val movementThreshold = if (abs(dxRaw) > 1 || abs(dyRaw) > 1) 1f else 0.4f  // Adjusted for faster movements
+                        val movementThreshold = if (abs(dxRaw) > 1 || abs(dyRaw) > 1) 1f else 0.5f  // Adjusted for faster movements
 
 //                        val dx = ((event.x - lastX) * speedMultiplier).toInt().coerceIn(-127, 127)
 //                        val dy = ((event.y - lastY) * speedMultiplier).toInt().coerceIn(-127, 127)
