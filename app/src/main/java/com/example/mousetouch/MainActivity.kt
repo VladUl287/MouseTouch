@@ -13,7 +13,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
@@ -23,6 +22,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -110,6 +111,16 @@ class MainActivity : ComponentActivity() {
             handleTouchEvent(event)
             true
         }
+
+        AirMouseSensorHelper(
+            context = this,
+            lifecycle = this.lifecycle,
+            onMovement = { dx, dy ->
+                lifecycleScope.launch {
+                    sendMouseReport(0, dx, dy, 0)
+                }
+            }
+        )
 
         setupHidDevice()
     }
