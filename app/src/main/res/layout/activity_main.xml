@@ -2,7 +2,6 @@
 <androidx.drawerlayout.widget.DrawerLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -11,36 +10,54 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#637">
+        android:background="#637"
+        android:fitsSystemWindows="true">
 
-        <LinearLayout
-            android:id="@+id/touchpadView"
-            android:layout_width="376dp"
-            android:layout_height="576dp"
-            android:layout_margin="15dp"
-            android:background="#000"
-            android:orientation="horizontal"
-            app:exampleColor="@android:color/white"
-            app:exampleDimension="32sp"
-            app:exampleString="Touchpad View"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.37"
-            app:layout_constraintStart_toStartOf="parent"
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            app:title="My App"
+            app:titleTextColor="@android:color/white"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.648" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"/>
 
         <Button
             android:id="@+id/btnOpenDrawer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.042"
-            app:layout_constraintStart_toStartOf="parent"
+            android:text="@string/MenuSymbol"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.001" />
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="8dp"
+            android:layout_marginStart="8dp" />
+
+        <LinearLayout
+            android:id="@+id/scroll"
+            android:layout_width="324dp"
+            android:layout_height="252dp"
+            android:layout_marginTop="64dp"
+            android:orientation="horizontal"
+            android:background="@color/gray_400"
+            app:layout_constraintTop_toBottomOf="@id/toolbar"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/touchpadView"
+            app:layout_constraintHorizontal_bias="0.5" />
+
+        <LinearLayout
+            android:id="@+id/touchpadView"
+            android:layout_width="333dp"
+            android:layout_height="299dp"
+            android:layout_marginBottom="52dp"
+            android:background="#000"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <LinearLayout
@@ -49,16 +66,10 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:orientation="vertical"
-        android:background="#ffffff"
+        android:background="#000"
         android:padding="16dp">
-        <!-- Toggle setting example -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Enable Feature"
-            android:textSize="16sp"
-            android:paddingBottom="8dp"/>
-        <Switch
+
+        <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/switchEnableFeature"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

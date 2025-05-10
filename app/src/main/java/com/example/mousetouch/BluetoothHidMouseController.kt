@@ -4,7 +4,6 @@ import android.Manifest
 import android.bluetooth.*
 import android.content.Context
 import android.os.Build
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import java.util.concurrent.Executors
@@ -25,7 +24,6 @@ class BluetoothHidMouseController(
     @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
     fun initialize() {
         if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
-            Toast.makeText(context, "Bluetooth not available or not enabled", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -60,6 +58,9 @@ class BluetoothHidMouseController(
 
     @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
     fun sendMouseReport(buttons: Int, dx: Int, dy: Int, wheel: Int) {
+        if (connectedDevice == null || bluetoothHidDevice == null) {
+            return
+        }
         val report = byteArrayOf(
             buttons.toByte(),
             dx.toByte(),
@@ -87,8 +88,8 @@ class BluetoothHidMouseController(
             object : BluetoothHidDevice.Callback() {
                 @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
                 override fun onAppStatusChanged(device: BluetoothDevice?, registered: Boolean) {
-                    connectedDevice = device
-                    if (registered && device == null) {
+                    if (registered) {
+                        connectedDevice = device
                         connectToPairedDevice()
                     }
                 }
@@ -101,8 +102,7 @@ class BluetoothHidMouseController(
         val device = bluetoothAdapter?.bondedDevices?.firstOrNull()
         if (device != null) {
             bluetoothHidDevice?.connect(device)
-        } else {
-            Toast.makeText(context, "Please pair with your Android TV first", Toast.LENGTH_LONG).show()
+            connectedDevice = device // Save the connected device reference
         }
     }
 

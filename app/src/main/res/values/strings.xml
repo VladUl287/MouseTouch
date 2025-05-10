@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">MouseTouch</string>
+    <string name="MenuSymbol">≡</string>
 </resources>
