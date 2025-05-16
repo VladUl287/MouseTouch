@@ -1,43 +1,56 @@
 package com.example.mousetouch
 
 import android.Manifest
-import android.bluetooth.*
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothHidDevice
+import android.bluetooth.BluetoothHidDeviceAppSdpSettings
+import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
 import android.content.Context
+import android.content.Context.BLUETOOTH_SERVICE
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import java.util.concurrent.Executors
 
-@RequiresApi(Build.VERSION_CODES.P)
-class BluetoothHidMouseController(
-    private val context: Context,
-    bluetoothManager: BluetoothManager
-) {
-    companion object {
-        private const val MOUSE_REPORT_ID = 1
+class BluetoothViewModel : ViewModel() {
+    private val _pairedDevices = MutableLiveData<List<BluetoothDevice>>()
+    val pairedDevices: LiveData<List<BluetoothDevice>> = _pairedDevices
+
+    private val _connectedDevice = MutableLiveData<BluetoothDevice?>()
+    val connectedDevice: LiveData<BluetoothDevice?> = _connectedDevice
+
+    private var bluetoothHidDevice: BluetoothHidDevice? = null
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    fun loadPairedDevices(context: Context) {
+        val bluetoothManager = context.getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
+        val bluetoothAdapter = bluetoothManager.adapter
+        val devices = mutableListOf<BluetoothDevice>()
+
+        bluetoothAdapter?.bondedDevices?.forEach { device ->
+            devices.add(device)
+        }
+        _pairedDevices.value = devices
     }
 
-    private val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
-    private var bluetoothHidDevice: BluetoothHidDevice? = null
-    private var connectedDevice: BluetoothDevice? = null
-
-
-
-    @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
-    fun initialize() {
-        if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
-            return
-        }
+    @RequiresApi(Build.VERSION_CODES.P)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    fun initializeHid(context: Context) {
+        val bluetoothManager = context.getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
+        val bluetoothAdapter = bluetoothManager.adapter
 
         bluetoothAdapter.getProfileProxy(context, object : BluetoothProfile.ServiceListener {
             @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
             override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
                 if (profile == BluetoothProfile.HID_DEVICE) {
                     bluetoothHidDevice = proxy as BluetoothHidDevice
-                    registerHidDeviceApp()
+                    registerHidDeviceApp(context)
                 }
             }
-
             override fun onServiceDisconnected(profile: Int) {
                 if (profile == BluetoothProfile.HID_DEVICE) {
                     bluetoothHidDevice = null
@@ -46,8 +59,9 @@ class BluetoothHidMouseController(
         }, BluetoothProfile.HID_DEVICE)
     }
 
+    @RequiresApi(Build.VERSION_CODES.P)
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-    private fun registerHidDeviceApp() {
+    private fun registerHidDeviceApp(context: Context) {
         val sdpSettings = BluetoothHidDeviceAppSdpSettings(
             "Android TV Mouse",
             "Remote mouse for Android TV",
@@ -64,30 +78,52 @@ class BluetoothHidMouseController(
             object : BluetoothHidDevice.Callback() {
                 @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
                 override fun onAppStatusChanged(device: BluetoothDevice?, registered: Boolean) {
-                    if (registered) {
-                        connectedDevice = device
-                        connectToPairedDevice()
-                    }
+//                    connectToFirstPairedDevice(context)
                 }
             }
         )
     }
 
-    @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
+    @RequiresApi(Build.VERSION_CODES.P)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    private fun connectToFirstPairedDevice(context: Context) {
+        val bluetoothManager = context.getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
+        val bluetoothAdapter = bluetoothManager.adapter
+        val device = bluetoothAdapter?.bondedDevices?.firstOrNull()
+        if (device != null) {
+            connectToDevice(device)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.P)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    fun connectToDevice(device: BluetoothDevice) {
+        bluetoothHidDevice?.connect(device)
+        _connectedDevice.value = device
+    }
+
+    @RequiresApi(Build.VERSION_CODES.P)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun sendClick(button: Int) {
         sendMouseReport(button, 0, 0, 0)
         Thread.sleep(100)
         sendMouseReport(0, 0, 0, 0)
     }
 
-    @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
+    @RequiresApi(Build.VERSION_CODES.P)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun sendScroll(wheel: Int) {
         sendMouseReport(0, 0, 0, wheel)
     }
 
-    @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
+    companion object {
+        private const val MOUSE_REPORT_ID = 1
+    }
+
+    @RequiresApi(Build.VERSION_CODES.P)
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun sendMouseReport(buttons: Int, dx: Int, dy: Int, wheel: Int) {
-        if (connectedDevice == null || bluetoothHidDevice == null) {
+        if (connectedDevice.value == null || bluetoothHidDevice == null) {
             return
         }
         val report = byteArrayOf(
@@ -96,17 +132,9 @@ class BluetoothHidMouseController(
             dy.toByte(),
             wheel.toByte()
         )
-        bluetoothHidDevice?.sendReport(connectedDevice, MOUSE_REPORT_ID, report)
+        bluetoothHidDevice?.sendReport(_connectedDevice.value, MOUSE_REPORT_ID, report)
     }
 
-    @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)
-    private fun connectToPairedDevice() {
-        val device = bluetoothAdapter?.bondedDevices?.firstOrNull()
-        if (device != null) {
-            bluetoothHidDevice?.connect(device)
-            connectedDevice = device // Save the connected device reference
-        }
-    }
 
     private fun getHidDescriptor(): ByteArray {
         return byteArrayOf(

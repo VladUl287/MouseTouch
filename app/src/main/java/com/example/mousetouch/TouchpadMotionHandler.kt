@@ -10,7 +10,7 @@ import kotlin.math.ceil
 import kotlin.math.floor
 
 class TouchpadMotionHandler(
-    private val controller: BluetoothHidMouseController,
+    private val controller: BluetoothViewModel,
     private val touchListener: MouseGestureListener
 ) {
     private var lastX = 0f

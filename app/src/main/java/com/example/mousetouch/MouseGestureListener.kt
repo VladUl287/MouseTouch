@@ -10,7 +10,7 @@ import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 
 class MouseGestureListener(
-    private val controller: BluetoothHidMouseController
+    private val controller: BluetoothViewModel
 ) : GestureDetector.SimpleOnGestureListener() {
 
     private var isLeftButtonHeld = false

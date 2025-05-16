@@ -1,18 +1,17 @@
 package com.example.mousetouch
 
 import android.Manifest
-import android.bluetooth.BluetoothManager
 import android.os.Build
 import android.os.Bundle
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.LinearLayout
-import android.widget.Switch
-import android.widget.Toast
+import android.widget.ListView
+import android.widget.TextView
 import androidx.activity.ComponentActivity
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.widget.SwitchCompat
@@ -22,45 +21,85 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.S)
 class MainActivity : ComponentActivity() {
 
-    private lateinit var settingsController: SettingsController
-
-    private lateinit var bluetoothController: BluetoothHidMouseController
-    private lateinit var gestureDetector: GestureDetector
-    private lateinit var touchpadMotionHandler: TouchpadMotionHandler
-    private lateinit var permissionHelper: PermissionHelper
+    private lateinit var viewModel: BluetoothViewModel
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val permissionsNotGranted = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
-            if (!results.all { it.value }) {
-                Toast.makeText(this, "Permissions denied. Can't proceed.", Toast.LENGTH_LONG).show()
-            }
-        }
-        permissionHelper = PermissionHelper(this, permissionsNotGranted)
-        permissionHelper.checkAndRequestPermissions()
+        viewModel = ViewModelProvider(this)[BluetoothViewModel::class.java]
 
-        val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothController = BluetoothHidMouseController(this, bluetoothManager)
-        bluetoothController.initialize()
-
-        val gestureListener = MouseGestureListener(bluetoothController)
+        val gestureListener = MouseGestureListener(viewModel)
         gestureDetector = GestureDetector(this, gestureListener)
-        touchpadMotionHandler = TouchpadMotionHandler(bluetoothController, gestureListener)
-
+        touchpadMotionHandler = TouchpadMotionHandler(viewModel, gestureListener)
         settingsController = SettingsController(this)
-
         setupUi()
         setupAirMouseSensor()
+
+        val listView = findViewById<ListView>(R.id.listView)
+        val connectedTextView = findViewById<TextView>(R.id.connectedDeviceText)
+
+        viewModel.pairedDevices.observe(this) { devices ->
+            val deviceNames = devices.map { "${it.name} (${it.address})" }
+            val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, deviceNames)
+            listView.adapter = adapter
+            listView.setOnItemClickListener { _, _, position, _ ->
+                val selectedDevice = devices[position]
+                viewModel.connectToDevice(selectedDevice)
+            }
+        }
+
+        viewModel.connectedDevice.observe(this) { device ->
+            connectedTextView.text = device?.let {
+                "Connected: ${it.name ?: "Unknown"} (${it.address})"
+            } ?: "No device connected"
+        }
+
+        viewModel.loadPairedDevices(this)
+        viewModel.initializeHid(this)
     }
+
+    private lateinit var settingsController: SettingsController
+
+//    private lateinit var bluetoothController: BluetoothHidMouseController
+    private lateinit var gestureDetector: GestureDetector
+    private lateinit var touchpadMotionHandler: TouchpadMotionHandler
+    private lateinit var permissionHelper: PermissionHelper
+
+//    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//        setContentView(R.layout.activity_main)
+//
+//        val permissionsNotGranted = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+//            if (!results.all { it.value }) {
+//                Toast.makeText(this, "Permissions denied. Can't proceed.", Toast.LENGTH_LONG).show()
+//            }
+//        }
+//        permissionHelper = PermissionHelper(this, permissionsNotGranted)
+//        permissionHelper.checkAndRequestPermissions()
+//
+//        val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
+//        bluetoothController = BluetoothHidMouseController(this, bluetoothManager)
+//        bluetoothController.initialize()
+//
+//        val gestureListener = MouseGestureListener(bluetoothController)
+//        gestureDetector = GestureDetector(this, gestureListener)
+//        touchpadMotionHandler = TouchpadMotionHandler(bluetoothController, gestureListener)
+//
+//        settingsController = SettingsController(this)
+//
+//        setupUi()
+//        setupAirMouseSensor()
+//    }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private fun setupUi() {
@@ -112,7 +151,7 @@ class MainActivity : ComponentActivity() {
             onMovement = { dx, dy ->
                 lifecycleScope.launch {
                     if (settingsController.isAirModeEnabled()) {
-                        bluetoothController.sendMouseReport(0, dx, dy, 0)
+                        viewModel.sendMouseReport(0, dx, dy, 0)
                     }
                 }
             }

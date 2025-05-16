@@ -11,7 +11,7 @@ import androidx.lifecycle.LifecycleOwner
 
 class AirMouseSensorHelper(
     private val context: Context,
-    private val lifecycle: Lifecycle,
+    lifecycle: Lifecycle,
     private val onMovement: (dx: Int, dy: Int) -> Unit
 ) : DefaultLifecycleObserver, SensorEventListener {
     private val sensorManager: SensorManager by lazy {

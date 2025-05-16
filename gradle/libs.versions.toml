@@ -11,6 +11,8 @@ activityCompose = "1.8.0"
 constraintlayout = "2.2.1"
 
 [libraries]
+lifecycle-viewmodel-ktx = "androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0"
+lifecycle-livedata-ktx = "androidx.lifecycle:lifecycle-livedata-ktx:2.9.0"
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
