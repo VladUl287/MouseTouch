@@ -10,54 +10,74 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#637"
+        android:background="#222831"
         android:fitsSystemWindows="true">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-            app:title="My App"
-            app:titleTextColor="@android:color/white"
-            app:layout_constraintTop_toTopOf="parent"
+            android:layout_height="0dp"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintHeight_percent="0.09"/>
 
         <Button
             android:id="@+id/btnOpenDrawer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
             android:text="@string/MenuSymbol"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginTop="8dp"
-            android:layout_marginStart="8dp" />
+            android:textSize="26sp"
+            app:layout_constraintBottom_toBottomOf="@+id/toolbar"
+            app:layout_constraintEnd_toEndOf="@+id/toolbar"
+            app:layout_constraintHorizontal_bias="0.02"
+            app:layout_constraintStart_toStartOf="@+id/toolbar"
+            app:layout_constraintTop_toTopOf="@+id/toolbar"/>
 
         <LinearLayout
             android:id="@+id/scroll"
-            android:layout_width="324dp"
-            android:layout_height="252dp"
-            android:layout_marginTop="64dp"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginHorizontal="5dp"
+            android:background="#393E46"
             android:orientation="horizontal"
-            android:background="@color/gray_400"
-            app:layout_constraintTop_toBottomOf="@id/toolbar"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toTopOf="@+id/touchpadView"
-            app:layout_constraintHorizontal_bias="0.5" />
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHeight_percent="0.31"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/toolbar"
+            app:layout_constraintVertical_bias="0.0"
+            android:gravity="center">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/scroll"
+                android:textSize="18sp"
+                android:alpha="0.7" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/touchpadView"
-            android:layout_width="333dp"
-            android:layout_height="299dp"
-            android:layout_marginBottom="52dp"
-            android:background="#000"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginHorizontal="5dp"
+            android:layout_marginBottom="3dp"
+            android:background="#393E46"
             android:orientation="horizontal"
+            app:layout_constraintHeight_percent="0.592"
             app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            android:gravity="center">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/mouse"
+                android:textSize="18sp"
+                android:alpha="0.7"/>
+        </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <LinearLayout
@@ -66,22 +86,27 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:orientation="vertical"
-        android:background="#000"
+        android:background="#393E46"
         android:padding="16dp">
 
         <androidx.appcompat.widget.SwitchCompat
+            android:textSize="22sp"
             android:id="@+id/switchEnableFeature"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Toggle Option" />
+            android:text="@string/air_mode"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="30dp"
+            app:switchPadding="12dp"
+            />
 
         <TextView
             android:id="@+id/connectedDeviceText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="No device connected"
+            android:text="@string/no_device_connected"
             android:textSize="16sp"
-            android:paddingBottom="8dp" />
+            android:layout_marginBottom="15dp"/>
 
         <ListView
             android:id="@+id/listView"

@@ -78,7 +78,7 @@ class BluetoothViewModel : ViewModel() {
             object : BluetoothHidDevice.Callback() {
                 @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
                 override fun onAppStatusChanged(device: BluetoothDevice?, registered: Boolean) {
-//                    connectToFirstPairedDevice(context)
+                    connectToFirstPairedDevice(context)
                 }
             }
         )
@@ -99,7 +99,7 @@ class BluetoothViewModel : ViewModel() {
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     fun connectToDevice(device: BluetoothDevice) {
         bluetoothHidDevice?.connect(device)
-        _connectedDevice.value = device
+        _connectedDevice.postValue(device)
     }
 
     @RequiresApi(Build.VERSION_CODES.P)

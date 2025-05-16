@@ -27,7 +27,9 @@ import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.S)
 class MainActivity : ComponentActivity() {
-
+    private lateinit var settingsController: SettingsController
+    private lateinit var gestureDetector: GestureDetector
+    private lateinit var touchpadMotionHandler: TouchpadMotionHandler
     private lateinit var viewModel: BluetoothViewModel
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -66,40 +68,6 @@ class MainActivity : ComponentActivity() {
         viewModel.loadPairedDevices(this)
         viewModel.initializeHid(this)
     }
-
-    private lateinit var settingsController: SettingsController
-
-//    private lateinit var bluetoothController: BluetoothHidMouseController
-    private lateinit var gestureDetector: GestureDetector
-    private lateinit var touchpadMotionHandler: TouchpadMotionHandler
-    private lateinit var permissionHelper: PermissionHelper
-
-//    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        setContentView(R.layout.activity_main)
-//
-//        val permissionsNotGranted = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
-//            if (!results.all { it.value }) {
-//                Toast.makeText(this, "Permissions denied. Can't proceed.", Toast.LENGTH_LONG).show()
-//            }
-//        }
-//        permissionHelper = PermissionHelper(this, permissionsNotGranted)
-//        permissionHelper.checkAndRequestPermissions()
-//
-//        val bluetoothManager = getSystemService(BLUETOOTH_SERVICE) as BluetoothManager
-//        bluetoothController = BluetoothHidMouseController(this, bluetoothManager)
-//        bluetoothController.initialize()
-//
-//        val gestureListener = MouseGestureListener(bluetoothController)
-//        gestureDetector = GestureDetector(this, gestureListener)
-//        touchpadMotionHandler = TouchpadMotionHandler(bluetoothController, gestureListener)
-//
-//        settingsController = SettingsController(this)
-//
-//        setupUi()
-//        setupAirMouseSensor()
-//    }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     private fun setupUi() {
@@ -141,6 +109,12 @@ class MainActivity : ComponentActivity() {
             }
             true
         }
+    }
+
+    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    override fun onResume() {
+        super.onResume()
+        viewModel.initializeHid(this)
     }
 
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)

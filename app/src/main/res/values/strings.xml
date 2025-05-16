@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">MouseTouch</string>
     <string name="MenuSymbol">≡</string>
+    <string name="scroll">scroll</string>
+    <string name="mouse">mouse</string>
+    <string name="air_mode">Air mode</string>
+    <string name="no_device_connected">No device connected</string>
 </resources>
